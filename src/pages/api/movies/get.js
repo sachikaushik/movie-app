@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       const response = getPagingData(totalItems, movies, req.query.page, limit);
       res.status(200).json(response);
     } catch (error) {
-      res.status(500).json({ error: "Error retrieving movies" });
+      res.status(500).json({ error: "Error retrieving movies", message: error.message });
     }
   } else {
     res.status(405).json({ message: "Method not allowed" });
