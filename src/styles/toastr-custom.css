@@ -1,0 +1,31 @@
+.toast {
+    border-radius: 5px; /* Rounded corners */
+    color: white; /* Text color */
+    padding: 10px 20px; /* Padding */
+  }
+  
+  
+  /* Success Notification */
+  .toast-success {
+    background-color: #1c9c3a; /* Green background */
+  }
+  
+  /* Error Notification */
+  .toast-error {
+    background-color: #d43545; /* Red background */
+  }
+  
+  /* Info Notification */
+  .toast-info {
+    background-color: #17a2b8; /* Blue background */
+  }
+  
+  /* Customize other notification properties if needed */
+  .toast-title {
+    font-weight: bold; /* Make title bold */
+  }
+  
+  /* Optional: Add hover effect */
+  .toast:hover {
+    opacity: 0.9; /* Slightly darker on hover */
+  }

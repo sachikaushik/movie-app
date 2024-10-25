@@ -19,3 +19,7 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.loader {
+  border-color: transparent; /* Remove color from the sides */
+}

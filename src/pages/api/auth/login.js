@@ -10,6 +10,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  if (typeof req.body === "string") {
+    req.body = JSON.parse(req.body);
+  }
+
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -21,6 +25,7 @@ export default async function handler(req, res) {
     const user = await prisma.user.findUnique({
       where: { email },
     });
+    console.log(user);
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });

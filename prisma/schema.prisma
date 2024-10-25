@@ -24,4 +24,6 @@ model Movie {
   title          String  // text for the movie title
   publishingYear Int     // number for the publishing year
   poster         String  // URL or path to the poster image
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

@@ -1,3 +1,4 @@
+import toastr from "@/lib/toastr";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -7,12 +8,17 @@ function Add() {
 
   const [title, setTitle] = useState("");
   const [publishingYear, setPublishingYear] = useState("");
-  const [imageFile, setImageFile] = useState(null); // State for the uploaded image
+  const [imageFile, setImageFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({ title: "", year: "" });
 
   async function handleSubmit(e) {
     e.preventDefault();
     console.log("submit");
     console.log(title, publishingYear);
+    if (!validateForm()) return;
+
+    setLoading(true);
 
     // Check if an image file is uploaded
     if (!imageFile) {
@@ -57,14 +63,15 @@ function Add() {
     });
 
     if (response.ok) {
-      alert("Movie added successfully");
+      toastr.success("Movie added successfully");
       setTimeout(() => {
         router.push("/movie");
       }, 1000);
     } else {
       console.error("Error adding movie:", await response.text());
-      alert("Error adding movie.");
+      toastr.error("Error adding movie.");
     }
+    setLoading(false);
   }
 
   function handleDragOver(e) {
@@ -74,10 +81,11 @@ function Add() {
 
   function handleDrop(e) {
     e.preventDefault();
-    const file = e.dataTransfer.files[0]; // Get the first file
-    if (file && file.type.startsWith("image/")) {
-      setImageFile(file); // Set the file in state
-      console.log("File dropped:", file.name);
+    const files = e.dataTransfer.files; // Get the first file
+    if (files && files.length > 0 && files[0].type.startsWith("image/")) {
+      //   setImageFile(file); // Set the file in state
+      //   console.log("File dropped:", file.name);
+      handleFileChange({ target: { files } });
     } else {
       alert("Please drop a valid image file.");
     }
@@ -90,45 +98,54 @@ function Add() {
     }
   }
 
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { title: "", year: "" };
+
+    if (!title) {
+      newErrors.title = "Title is required";
+      valid = false;
+    }
+
+    if (!publishingYear) {
+      newErrors.year = "Publishing year is required";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
   return (
     <div className="px-8 pb-8 flex flex-col justify-between items-start">
-      <div className="flex justify-center w-full">
-        <h2 className="text-white text-5xl font-semibold mb-6 items-center text-center">
-          Create a new movie
-        </h2>
-      </div>
-      <div className="flex space-x-6 items-center py-8">
+      <h2 className="text-white text-5xl font-semibold mb-6 text-center">
+        Create a new movie
+      </h2>
+      <div className="flex space-x-6 py-8">
         <div
-          className="w-[400px] h-[400px] border-2 border-dashed border-gray-400 flex flex-col justify-center items-center rounded-lg hover:bg-gray-700 hover:cursor-pointer hover:border-green-500 hover:border-dotted"
-          onDragOver={handleDragOver} 
+          className="w-[400px] h-[400px] border-2 border-dashed border-gray-400 flex flex-col justify-center items-center rounded-lg hover:bg-gray-700 hover:cursor-pointer hover:border-green-500"
+          onDragOver={handleDragOver}
           onDrop={handleDrop}
-          onClick={() => {
-            const fileInput = document.getElementById("fileInput");
-            if (fileInput) {
-              fileInput.click();
-            } else {
-              console.error("File input element not found");
-            }
-          }}
+          onClick={() => document.getElementById("fileInput").click()}
         >
           {imageFile ? (
             <Image
               src={URL.createObjectURL(imageFile)} // Preview the uploaded image
               width={400}
               height={400}
-              alt="uploaded image"
-              className="mb-3"
+              alt="Uploaded image preview"
+              className=""
             />
           ) : (
             <Image
               src="/assets/file_download.png"
-              width={16}
-              height={16}
-              alt="file_download"
-              className="mb-3"
+              width={50}
+              height={50}
+              alt="File download icon"
+              className=""
             />
           )}
-          <p className="text-gray-300">Drop an image here</p>
+          <p className="text-gray-300">Drop an image here or click to upload</p>
         </div>
 
         <input
@@ -136,10 +153,10 @@ function Add() {
           type="file"
           accept="image/*"
           onChange={handleFileChange}
-          style={{ display: "none" }}
+          className="hidden"
         />
 
-        <div className="flex flex-col w-[400px] space-y-6 align-top">
+        <div className="flex flex-col w-[400px] space-y-6">
           <div>
             <label htmlFor="title" className="block mb-2 text-gray-300">
               Title
@@ -147,10 +164,20 @@ function Add() {
             <input
               type="text"
               id="title"
-              className="w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className={`w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                errors.title
+                  ? "border-2 border-red-500 focus:ring-red-500"
+                  : "focus:ring-green-500"
+              }`}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (errors.title) validateForm();
+              }}
             />
+            {errors.title && (
+              <p className="mt-2 text-red-500">{errors.title}</p>
+            )}
           </div>
 
           <div>
@@ -160,24 +187,36 @@ function Add() {
             <input
               type="text"
               id="year"
-              className="w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className={`w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                errors.year
+                  ? "border-2 border-red-500 focus:ring-red-500"
+                  : "focus:ring-green-500"
+              }`}
               value={publishingYear}
-              onChange={(e) => setPublishingYear(e.target.value)}
+              onChange={(e) => {
+                setPublishingYear(e.target.value);
+                if (errors.year) validateForm();
+              }}
             />
+            {errors.year && <p className="mt-2 text-red-500">{errors.year}</p>}
           </div>
 
           <div className="flex space-x-4 justify-between">
             <button
-              className="w-[120px] bg-transparent border border-gray-300 text-gray-300 py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+              className="w-[120px] bg-transparent border border-gray-300 text-gray-300 py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
               onClick={() => router.push("/movie")}
+              type="button" // Prevent submission
             >
               Cancel
             </button>
             <button
-              className="w-[120px] bg-[#2BD17E] text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+              className={`w-[120px] ${
+                loading ? "bg-gray-600" : "bg-[#2BD17E]"
+              } text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500`}
               onClick={handleSubmit}
+              disabled={loading} // Disable button while loading
             >
-              Submit
+              {loading ? "Submitting..." : "Submit"}
             </button>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import toastr from "@/lib/toastr";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
@@ -9,6 +10,8 @@ function Edit() {
   const [publishingYear, setPublishingYear] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [existingImage, setExistingImage] = useState(null); // State for existing image URL
+  const [errors, setErrors] = useState({}); // State for error messages
+  const [loading, setLoading] = useState(false); // State for loading
 
   async function fetchMovieDetails(id) {
     try {
@@ -34,9 +37,24 @@ function Edit() {
     }
   }, [router.query]);
 
+  function validateForm() {
+    const newErrors = {};
+    if (!title) newErrors.title = "Title is required.";
+    if (!publishingYear) newErrors.year = "Publishing year is required.";
+    else if (!/^\d{4}$/.test(publishingYear)) 
+      newErrors.year = "Publishing year must be a 4-digit number.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0; // Return true if no errors
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
 
+    // Validate the form
+    if (!validateForm()) return;
+
+    setLoading(true);
     let imageUrl = existingImage;
 
     // Upload the new image if it exists
@@ -54,6 +72,7 @@ function Edit() {
         imageUrl = jsonRes.data[0].Location;
       } else {
         alert("Error uploading image.");
+        setLoading(false);
         return;
       }
     }
@@ -65,6 +84,7 @@ function Edit() {
       publishingYear,
       poster: imageUrl,
     };
+
     const response = await fetch(`/api/movies/edit?id=${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
@@ -73,13 +93,15 @@ function Edit() {
       },
     });
 
+    setLoading(false);
+    
     if (response.ok) {
-      alert("Movie updated successfully");
+      toastr.success("Movie updated successfully");
       setTimeout(() => {
         router.push("/movie");
       }, 1000);
     } else {
-      alert("Error updating movie.");
+      toastr.error("Error updating movie.");
     }
   }
 
@@ -111,7 +133,7 @@ function Edit() {
           Edit movie
         </h2>
       </div>
-      <div className="flex space-x-6 items-center py-8">
+      <div className="flex space-x-6 items-start py-8">
         <div
           className="w-[400px] h-[400px] border-2 border-dashed border-gray-400 flex flex-col justify-center items-center rounded-lg hover:bg-gray-700 cursor-pointer hover:border-green-500 hover:border-dotted"
           onDragOver={handleDragOver}
@@ -127,7 +149,7 @@ function Edit() {
               width={400}
               height={400}
               alt="uploaded image"
-              className="mb-3"
+              className=""
             />
           ) : existingImage ? (
             <Image
@@ -135,7 +157,7 @@ function Edit() {
               width={400}
               height={400}
               alt="existing image"
-              className="mb-3"
+              className="mb-0"
             />
           ) : (
             <Image
@@ -143,10 +165,10 @@ function Edit() {
               width={16}
               height={16}
               alt="file download"
-              className="mb-3"
+              className="mb-0"
             />
           )}
-          <p className="text-gray-300">Drop an image here</p>
+          <p className="text-gray-300 ">Drop an image here or click to upload</p>
         </div>
 
         <input
@@ -165,10 +187,16 @@ function Edit() {
             <input
               type="text"
               id="title"
-              className="w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className={`w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                errors.title ? "border-2 border-red-500 focus:ring-red-500" : "focus:ring-green-500"
+              }`}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (errors.title) validateForm(); // Validate on input change
+              }}
             />
+            {errors.title && <p className="mt-2 text-red-500">{errors.title}</p>}
           </div>
 
           <div>
@@ -178,10 +206,16 @@ function Edit() {
             <input
               type="text"
               id="year"
-              className="w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className={`w-full px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 ${
+                errors.year ? "border-2 border-red-500 focus:ring-red-500" : "focus:ring-green-500"
+              }`}
               value={publishingYear}
-              onChange={(e) => setPublishingYear(e.target.value)}
+              onChange={(e) => {
+                setPublishingYear(e.target.value);
+                if (errors.year) validateForm(); // Validate on input change
+              }}
             />
+            {errors.year && <p className="mt-2 text-red-500">{errors.year}</p>}
           </div>
 
           <div className="flex space-x-4 justify-between">
@@ -192,10 +226,11 @@ function Edit() {
               Cancel
             </button>
             <button
-              className="w-[120px] bg-[#2BD17E] text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+              className={`w-[120px] ${loading ? "bg-gray-600" : "bg-[#2BD17E]"} text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500`}
               onClick={handleSubmit}
+              disabled={loading} // Disable button while loading
             >
-              Submit
+              {loading ? "Submitting..." : "Submit"}
             </button>
           </div>
         </div>

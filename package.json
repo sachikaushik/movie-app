@@ -22,7 +22,8 @@
     "next-connect": "^1.0.0",
     "react": "19.0.0-rc-69d4b800-20241021",
     "react-dom": "19.0.0-rc-69d4b800-20241021",
-    "react-dropzone": "^14.2.10"
+    "react-dropzone": "^14.2.10",
+    "toastr": "^2.1.4"
   },
   "devDependencies": {
     "postcss": "^8",

@@ -24,6 +24,9 @@ export default async function handler(req, res) {
       const movies = await prisma.movie.findMany({
         skip: offset,
         take: limit,
+        orderBy: {
+          createdAt: "asc",
+        },
       });
       const response = getPagingData(totalItems, movies, req.query.page, limit);
       res.status(200).json(response);
